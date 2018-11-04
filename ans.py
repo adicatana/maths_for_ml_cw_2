@@ -69,7 +69,7 @@ def plotTrigo():
     plt.show()
 
 # plotPolynomial()
-plotTrigo()
+# plotTrigo()
 
 def getIntervals(N, K):
     intervalSize = int(N / K)
@@ -88,23 +88,40 @@ def crossValidation():
     intervals = getIntervals(200, 10)
     trueValues = np.cos(10*mockPoints**2) + 0.1 * np.sin(100*mockPoints)
 
-    order = 1
-    for i in intervals:
-        lefties = mockPoints[:(i[0] - 1)]
-        lefties.reshape(1, len(lefties))
-        righties = mockPoints[(i[1] + 1):]
-        righties.reshape(1, len(righties))
+    averages = []
+    for order in range(1, 11):
+        errorsSum = 0
+        for i in intervals:
+            lefties = mockPoints[:(i[0] - 1)]
+            lefties.reshape(1, len(lefties))
+            righties = mockPoints[(i[1] + 1):]
+            righties.reshape(1, len(righties))
 
-        lefties_v = trueValues[:(i[0] + 1)]
-        righties_v = trueValues[(i[1] + 1):]
+            lefties_v = trueValues[:(i[0] - 1)]
+            lefties.reshape(1, len(lefties_v))
+            righties_v = trueValues[(i[1] + 1):]
+            righties.reshape(1, len(righties_v))
 
-        u = np.transpose(list(lefties) + list(righties))
-        v = np.transpose(list(lefties_v) + list(righties_v))
+            u = np.concatenate([lefties, righties],axis=0)
+            v = np.concatenate([lefties_v, righties_v],axis=0)
 
-        w = getWeight(phiTrigo(u, order), v)
-        v = []
-        for j in range(i[0], i[1] + 1):
-            values.append(np.dot(phiTrigo(j, order), weight)[0])
+            weight = getWeight(phiTrigo(u, order), v)
+            S = 0
+            curr = 0
+            for j in range(i[0], i[1] + 1):
+                value = np.dot(phiTrigo(mockPoints[j], order), weight)[0]
+                expected = np.cos(10*mockPoints[j]**2) + 0.1 * np.sin(100*mockPoints[j])
+                S = S + (value - expected) ** 2
+                curr = curr + 1
 
+            S = float(S / curr)
+            errorsSum = errorsSum + S
 
-# crossValidation()
+        average = float(errorsSum / 10)
+        print(average)
+        averages.append(average)
+
+    plt.plot(range(1,11), averages, label=str(order))
+    plt.show()
+
+crossValidation()
