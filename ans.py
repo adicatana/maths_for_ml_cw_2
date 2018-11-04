@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-N = 25
+N = 10000
 
 X = np.reshape(np.linspace(0, 0.9, N), (N, 1))
 Y = np.cos(10*X**2) + 0.1 * np.sin(100*X)
@@ -34,8 +34,8 @@ def plotPolynomial():
     plt.ylim(top=5)
     plt.ylim(bottom=-5)
 
-    mockPoints = np.reshape(np.linspace(-0.3, 1.3, 200), (200, 1))
-    plotMap = [(0, "red"), (1, "blue"), (2, "green"), (3, "cyan"), (11, "black")]
+    mockPoints = np.reshape(np.linspace(-0.3, 1.3, 1000), (1000, 1))
+    plotMap = [(30, "black")]#[(0, "red"), (1, "blue"), (2, "green"), (3, "cyan"), (11, "black")]
     for order, col in plotMap:
         weight = getWeight(phiPoly(X, order), Y)
         values = []
@@ -68,7 +68,7 @@ def plotTrigo():
     plt.legend()
     plt.show()
 
-# plotPolynomial()
+plotPolynomial()
 # plotTrigo()
 
 def getIntervals(N, K):
@@ -87,58 +87,57 @@ def getStandardError(x, order):
     trueValues = np.cos(10*x**2) + 0.1 * np.sin(100*x)
     weight = getWeight(phiTrigo(x, order), trueValues)
 
-    S = 0
+    S = 0.
     for i in range(len(x)):
         value = np.dot(phiTrigo(x[i], order), weight)[0]
         diff = (value - trueValues[i]) ** 2
         S = S + diff
     return float(S/len(x))
 
-def crossValidation():
-    mockPoints = np.reshape(np.linspace(-1, 1.2, 200), (200, 1))
-    intervals = getIntervals(200, 10)
+def crossValidation(pointsN=1000, split=10, startP=0, endP=0.9):
+
+    orders=range(0, 11)
+
+    mockPoints = np.reshape(np.linspace(startP, endP, pointsN), (pointsN, 1))
+
+    # np.random.shuffle(mockPoints)
+
+    intervals = getIntervals(pointsN, split)
     trueValues = np.cos(10*mockPoints**2) + 0.1 * np.sin(100*mockPoints)
 
     averages = []
     standards = []
-    for order in range(1, 11):
-        errorsSum = 0
+    for order in orders:
+        errorsSum = 0.
         for i in intervals:
-            lefties = mockPoints[:(i[0] - 1)]
-            lefties.reshape(1, len(lefties))
+            lefties = mockPoints[:i[0]]
             righties = mockPoints[(i[1] + 1):]
-            righties.reshape(1, len(righties))
 
-            lefties_v = trueValues[:(i[0] - 1)]
-            lefties.reshape(1, len(lefties_v))
+            lefties_v = trueValues[:i[0]]
             righties_v = trueValues[(i[1] + 1):]
-            righties.reshape(1, len(righties_v))
 
             u = np.concatenate([lefties, righties],axis=0)
             v = np.concatenate([lefties_v, righties_v],axis=0)
 
             weight = getWeight(phiTrigo(u, order), v)
-            S = 0
-            curr = 0
+            S = 0.
+            curr = i[1] - i[0] + 1
             for j in range(i[0], i[1] + 1):
-                value = np.dot(phiTrigo(mockPoints[j], order), weight)[0]
-                expected = np.cos(10*mockPoints[j]**2) + 0.1 * np.sin(100*mockPoints[j])
-                S = S + (value - expected) ** 2
-                curr = curr + 1
+                value = np.dot(phiTrigo(mockPoints[j], order), weight)[0][0]
+                expected = trueValues[j]
+                S = S + ((value - expected) ** 2) / curr
 
-            S = float(S / curr)
-            errorsSum = errorsSum + S
+            errorsSum += S
 
         standardError = getStandardError(mockPoints, order)
         standards.append(standardError)
 
-        average = float(errorsSum / 10)
-        print(average)
+        average = float(errorsSum / len(intervals))
         averages.append(average)
 
-    plt.plot(range(1,11), averages, label="Squared average error", color="blue")
-    plt.plot(range(1,11), standards, label="Standard error", color="red")
+    plt.plot(orders, averages, label="Squared average error", color="blue")
+    plt.plot(orders, standards, label="Standard error", color="red")
     plt.legend()
     plt.show()
 
-crossValidation()
+# crossValidation()
