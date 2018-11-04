@@ -83,12 +83,24 @@ def getIntervals(N, K):
     print(intervals)
     return intervals
 
+def getStandardError(x, order):
+    trueValues = np.cos(10*x**2) + 0.1 * np.sin(100*x)
+    weight = getWeight(phiTrigo(x, order), trueValues)
+
+    S = 0
+    for i in range(len(x)):
+        value = np.dot(phiTrigo(x[i], order), weight)[0]
+        diff = (value - trueValues[i]) ** 2
+        S = S + diff
+    return float(S/len(x))
+
 def crossValidation():
     mockPoints = np.reshape(np.linspace(-1, 1.2, 200), (200, 1))
     intervals = getIntervals(200, 10)
     trueValues = np.cos(10*mockPoints**2) + 0.1 * np.sin(100*mockPoints)
 
     averages = []
+    standards = []
     for order in range(1, 11):
         errorsSum = 0
         for i in intervals:
@@ -117,11 +129,16 @@ def crossValidation():
             S = float(S / curr)
             errorsSum = errorsSum + S
 
+        standardError = getStandardError(mockPoints, order)
+        standards.append(standardError)
+
         average = float(errorsSum / 10)
         print(average)
         averages.append(average)
 
-    plt.plot(range(1,11), averages, label=str(order))
+    plt.plot(range(1,11), averages, label="Squared average error", color="blue")
+    plt.plot(range(1,11), standards, label="Standard error", color="red")
+    plt.legend()
     plt.show()
 
 crossValidation()
